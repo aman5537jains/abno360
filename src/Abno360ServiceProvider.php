@@ -19,7 +19,7 @@ class Abno360ServiceProvider extends ServiceProvider
             __DIR__.'/abno360.php' => config_path('abno360.php', 'config'),
         ]);
         $this->loadRoutesFrom(__DIR__.'/routes/web.php');
-        // $this->loadViewsFrom(__DIR__.'/resources/views', 'Etims');
+        $this->loadViewsFrom(__DIR__.'/resources/views', 'Abno360');
         // $this->publishes([
         //     __DIR__.'/resources/assets' => public_path('etims'),
         // ], 'assets');

@@ -2,6 +2,7 @@
 namespace Abno\Abno360;
 
 use Abno\Abno360\Contracts\Abno360UserContract;
+use Abno\Abno360\Contracts\SelectOrganizationContract;
 use Abno\Abno360\Models\Abno360User;
 use Illuminate\Support\Facades\Auth;
 
@@ -37,13 +38,14 @@ class Abno360Service{
     public function loginInternalUser($user,$guard=''){
 
         $Abno360UserModel  = Abno360User::where("abno360_user_id",$user->id);
+
         if($Abno360UserModel->count()<=0){
             $model = $this->getAuthModel($guard);
             $userInteranl = new $model;
-            $userInteranl =$userInteranl->where("email",$user->email);
+            $userInteranl = $userInteranl->where("email",$user->email);
 
             if($userInteranl->count()>0){
-                $userInteranl =$userInteranl->first();
+                $userInteranl = $userInteranl->first();
             }
             else{
                 $userInteranl->email = $user->email;
@@ -82,7 +84,8 @@ class Abno360Service{
          "name"=>$info->getName(),
          "email"=>$info->getEmail(),
          "phone_no"=>$info->getPhone(),
-         "password"=>$info->getPassword()]
+         "password"=>$info->getPassword()
+         ]
         );
 
         if($user->id)
@@ -111,7 +114,7 @@ class Abno360Service{
 
     public function loginURL($guard='',$redirect=""){
          if($guard==""){
-           $guard =  config("auth.defaults.guard");
+             $guard =  config("auth.defaults.guard");
          }
          $clientId = config("abno360.client_id");
 
@@ -121,11 +124,35 @@ class Abno360Service{
     public function handleLogin($token){
         session()->put("abno360token",$token);
         $user =  $this->me();
-        $internalUser = $this->loginInternalUser($user,request("auth",''));
-        $urlToRedirect = request("ins_uri",'');
-        if($urlToRedirect!=''){
-            return redirect()->to($urlToRedirect);
+        // $internalUser = $this->loginInternalUser($user,request("auth",''));
+        $SelectOrganizationContract = new SelectOrganizationContract($user);
+        if($SelectOrganizationContract->isUserConnectedWithAnyAuth()){
+            return $SelectOrganizationContract->render();
         }
+        else{
+            $contract = config("abno360.default_auth_contract");;
+            if(empty(request("auth",''))){
+                $contract = request("auth");
+            }
+            $object  = new $contract($user);
+            if($object->register()){
+                $SelectOrganizationContract = new SelectOrganizationContract($user);
+                if($SelectOrganizationContract->isUserConnectedWithAnyAuth()){
+                    return $SelectOrganizationContract->render();
+                }
+                else{
+                    throw new \Exception("There is some error while connecting");
+                }
+            }
+            else{
+                throw new \Exception("There is some error while registering user");
+            }
+        }
+
+        // $urlToRedirect = request("ins_uri",'');
+        // if($urlToRedirect!=''){
+        //     return redirect()->to($urlToRedirect);
+        // }
 
 
     }
@@ -170,6 +197,21 @@ class Abno360Service{
             echo $result;die;
             throw new \Exception($result);
          }
+
+    }
+
+    public function handleAuthContract($cls){
+        $user =  $this->me();
+        $clsObject = new $cls($user);
+        if($clsObject->auth()){
+            return response()->json(["success"]);
+        }
+        else{
+
+                return response()->json(["error"],400);
+
+
+        }
 
     }
 }
