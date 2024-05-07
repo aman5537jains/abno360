@@ -6,7 +6,7 @@ use App\Models\User;
 
 class SelectOrganizationContract{
     public $user;
-    public $allContracts;
+    public $allContracts=[];
     public function __construct($user)
     {
         $this->user=$user;

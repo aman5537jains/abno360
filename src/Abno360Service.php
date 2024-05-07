@@ -131,9 +131,10 @@ class Abno360Service{
         }
         else{
             $contract = config("abno360.default_auth_contract");;
-            if(empty(request("auth",''))){
+            if(!empty(request("auth",''))){
                 $contract = request("auth");
             }
+
             $object  = new $contract($user);
             if($object->register()){
                 $SelectOrganizationContract = new SelectOrganizationContract($user);
