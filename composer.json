@@ -1,0 +1,28 @@
+{
+    "name": "abno/abno360",
+    "description": "Integrate Abno360",
+    "type": "library",
+    "license": "MIT",
+    "keywords":["Abno360"],
+    "authors": [
+        {
+            "name": "aman",
+            "email": "ajain@abnosoftwares.co.ke"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Abno\\Abno360\\": "/src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Abno\\Abno360\\Abno360ServiceProvider"
+            ]
+        }
+    },
+    "require": {
+
+    }
+}
