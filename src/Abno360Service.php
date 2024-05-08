@@ -128,7 +128,7 @@ class Abno360Service{
         $SelectOrganizationContract = new SelectOrganizationContract($user);
 
         if($SelectOrganizationContract->isUserConnectedWithAnyAuth()){
-            if($SelectOrganizationContract->connectedAuthCount()>1){
+            if($SelectOrganizationContract->connectedAuthCount()==1){
                 $firstContract =  $SelectOrganizationContract->getFirstContract();
                 if($firstContract->auth()){
                     return redirect()->to($firstContract->redirectUrl());
