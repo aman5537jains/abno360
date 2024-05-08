@@ -4,18 +4,23 @@ namespace Abno\Abno360\Contracts;
 abstract class AuthModelContract{
     public $user;
     public $model;
+    public $query;
 
-    public function __construct($user)
+    public function __construct($user,$localUserModel='')
     {
         $this->user=$user;
-         $this->setUser();
+        if($localUserModel!=''){
+         $this->setUserModel($localUserModel);
+        }
     }
-    public function setUser(){
-        $this->model = $this->getModel()::where("email",$this->user->email)->first();
+
+    public function query(){
+      return $this->getModel()::where("email",$this->user->email);
     }
 
-
-
+    public function setUserModel($localUserModel=''){
+            $this->model = $localUserModel;
+    }
     public function getName(){
         return  $this->user->name;
     }

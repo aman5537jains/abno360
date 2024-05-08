@@ -21,8 +21,12 @@ class SelectOrganizationContract{
         $contracts = $this->authContracts();
         foreach($contracts as $contract){
             $contractObject = new $contract($this->user);
-            if($contractObject->isExist()){
-                $this->allContracts[] =  new $contract($this->user);
+            if($contractObject->query()->count()>0){
+                $allModelContracts =  $contractObject->query()->get();
+                foreach($allModelContracts as $modelRecords){
+                    $this->allContracts[] =  new $contract($this->user,$modelRecords);
+                }
+
             }
         }
         return $this->allContracts;
