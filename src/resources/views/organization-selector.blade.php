@@ -56,7 +56,7 @@
      let url = "{{route('abno-360-organization-login')}}";
      function selectOrganization (cls,userid,redirect){
         $.get(url+"?cls="+cls+"&userid="+userid,function(data){
-            window.location = redirect;
+            window.location = data.redirect_url;
         })
      }
 </script>

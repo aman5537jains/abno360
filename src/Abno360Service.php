@@ -205,7 +205,7 @@ class Abno360Service{
         $user =  $this->me();
         $clsObject = new $cls($user,$userID);
         if($clsObject->auth()){
-            return response()->json(["success"]);
+            return response()->json(["status"=>"true","message"=>"success","redirect_url"=>$clsObject->redirectUrl()]);
         }
         else{
 
