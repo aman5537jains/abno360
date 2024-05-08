@@ -201,9 +201,9 @@ class Abno360Service{
 
     }
 
-    public function handleAuthContract($cls){
+    public function handleAuthContract($cls,$userID){
         $user =  $this->me();
-        $clsObject = new $cls($user);
+        $clsObject = new $cls($user,$userID);
         if($clsObject->auth()){
             return response()->json(["success"]);
         }

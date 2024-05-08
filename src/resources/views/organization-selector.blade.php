@@ -33,7 +33,7 @@
             <div class="card-body">
                 <ul class="list-group list-group-flush">
                     @foreach($contracts as $contract)
-                    <li style='cursor:pointer' onclick="selectOrganization('{{urlencode($contract->getClass())}}','{{$contract->redirectUrl()}}')" class="list-group-item">{{$contract->getName()}} - {{$contract->getEmail()}} </li>
+                    <li style='cursor:pointer' onclick="selectOrganization('{{urlencode($contract->getClass())}}','{{$contract->getID()}}','{{$contract->redirectUrl()}}')" class="list-group-item">{{$contract->getName()}} - {{$contract->getEmail()}} </li>
                     @endforeach
                   </ul>
             </div>
@@ -54,8 +54,8 @@
 <script>
 
      let url = "{{route('abno-360-organization-login')}}";
-     function selectOrganization (cls,redirect){
-        $.get(url+"?cls="+cls,function(data){
+     function selectOrganization (cls,userid,redirect){
+        $.get(url+"?cls="+cls+"&userid="+userid,function(data){
             window.location = redirect;
         })
      }

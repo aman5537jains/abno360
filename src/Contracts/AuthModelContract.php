@@ -18,14 +18,17 @@ abstract class AuthModelContract{
       return $this->getModel()::where("email",$this->user->email);
     }
 
-    public function setUserModel($localUserModel=''){
-            $this->model = $localUserModel;
+    public function setUserModel($localUserModel){
+            $this->model = $this->query()->where("id",$localUserModel)->first();
     }
     public function getName(){
-        return  $this->user->name;
+        return  $this->model->name;
+    }
+    public function getID(){
+        return  $this->model->id;
     }
     public function getEmail(){
-        return $this->user->email;
+        return $this->model->email;
     }
     public function redirectUrl(){
         return "";
