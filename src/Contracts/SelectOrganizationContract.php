@@ -36,6 +36,12 @@ class SelectOrganizationContract{
         return count($this->allContracts)>0;
     }
 
+    public function connectedAuthCount(){
+        return count($this->allContracts);
+    }
+    public function getFirstContract(){
+        return $this->allContracts[0];
+    }
 
 
 

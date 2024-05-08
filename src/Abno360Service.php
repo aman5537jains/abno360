@@ -126,8 +126,18 @@ class Abno360Service{
         $user =  $this->me();
         // $internalUser = $this->loginInternalUser($user,request("auth",''));
         $SelectOrganizationContract = new SelectOrganizationContract($user);
+
         if($SelectOrganizationContract->isUserConnectedWithAnyAuth()){
-            return $SelectOrganizationContract->render();
+            if($SelectOrganizationContract->connectedAuthCount()>1){
+                $firstContract =  $SelectOrganizationContract->getFirstContract();
+                if($firstContract->auth()){
+                    return redirect()->to($firstContract->redirectUrl());
+                }
+            }
+            else{
+                return $SelectOrganizationContract->render();
+            }
+
         }
         else{
             $contract = config("abno360.default_auth_contract");;
@@ -139,7 +149,15 @@ class Abno360Service{
             if($object->register()){
                 $SelectOrganizationContract = new SelectOrganizationContract($user);
                 if($SelectOrganizationContract->isUserConnectedWithAnyAuth()){
-                    return $SelectOrganizationContract->render();
+                    if($SelectOrganizationContract->connectedAuthCount()==1){
+                        $firstContract =  $SelectOrganizationContract->getFirstContract();
+                        if($firstContract->auth()){
+                            return redirect()->to($firstContract->redirectUrl());
+                        }
+                    }
+                    else{
+                        return $SelectOrganizationContract->render();
+                    }
                 }
                 else{
                     throw new \Exception("There is some error while connecting");
