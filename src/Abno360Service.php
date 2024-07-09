@@ -273,7 +273,7 @@ class Abno360Service{
         $user =  $this->me($token);
         $this->storeDatabase($user->db);
         $this->storeUser($user->user);
-        return route("select-organization");
+        return redirect(route("select-organization"));
         return true;
     }
 
