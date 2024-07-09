@@ -203,7 +203,7 @@ class Abno360Service{
     public function selectOrganization(){
         $user =  $this->getUser();
 
-        $SelectOrganizationContract = new SelectOrganizationContract($user->user);
+        $SelectOrganizationContract = new SelectOrganizationContract($user);
 
         if($SelectOrganizationContract->isUserConnectedWithAnyAuth()){
 
@@ -273,6 +273,7 @@ class Abno360Service{
         $user =  $this->me($token);
         $this->storeDatabase($user->db);
         $this->storeUser($user->user);
+        return route("select-organization");
         return true;
     }
 

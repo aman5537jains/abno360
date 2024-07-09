@@ -4,9 +4,9 @@ use Abno\Abno360\Abno360Service;
 
 Route::get("select-organization",function(){
 
-    // $Abno360Service = new Abno360Service;
-    // return $Abno360Service->getDatabase();
-})->middleware("web")->name("abno360-handle-redirect");
+    $Abno360Service = new Abno360Service;
+    return $Abno360Service->selectOrganization();
+})->middleware("web")->name("select-organization");
 
 Route::get("auth/callback",function(){
 
