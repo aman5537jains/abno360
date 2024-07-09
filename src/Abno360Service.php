@@ -5,6 +5,8 @@ use Abno\Abno360\Contracts\Abno360UserContract;
 use Abno\Abno360\Contracts\SelectOrganizationContract;
 use Abno\Abno360\Models\Abno360User;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Config;
 
 class Abno360Service{
 
@@ -16,6 +18,42 @@ class Abno360Service{
     {
         $this->url = config("abno360.abno360url");
         $this->apiUrl = config("abno360.abno360url")."/api/";
+    }
+    public function logout()
+    {
+
+    }
+    public  function setDatabase(){
+
+            $database = $this->getDatabase();
+
+            if($database){
+
+               $this->setDatabaseConfig($database);
+               Config::set("app.multi_domain_site",request()->getHttpHost());
+            }
+    }
+
+    public static function isPluginActive($plugin){
+
+        // return AbnCmsModule::where("class_name",$plugin)->where("is_active",'1')->count()>0?true:false;
+    }
+
+    public  function setDatabaseConfig($client){
+                $config = Config::get("database.connections.mysql");
+                $config["host"] = $client->db_host;
+                $config["database"] = $client->db_name;
+                $config["username"] = $client->db_username;
+                $config["password"] = $client->db_password;
+                Config::set("database.connections.mysql",$config);
+                Config::set("database.connections.{$client->id}-domain",$config);
+    }
+
+    public static function getAllClients($domains=[]){
+        if(count($domains)<=0)
+            return User::where("status",1)->get();
+        if(count($domains)>0)
+            return User::whereIn("domain",$domains)->where("status",1)->get();
     }
     public function addUserToLocal(Abno360UserContract $user){
 
@@ -78,6 +116,13 @@ class Abno360Service{
         return $userInteranl;
 
     }
+    public function getOrganizationConfigForDomain($domain){
+
+        return  $this->callApi("service/domain/config","POST",
+                [
+                    "domain"=>$domain
+                ]);
+     }
     public function addUser(Abno360UserContract $info){
 
        $user =  $this->callApi("auth/register","POST",[
@@ -100,34 +145,68 @@ class Abno360Service{
         $this->callApi("auth/update","POST",$info);
 
     }
-    public function me(){
-        if(!empty(session()->get("abno360token"))){
-           $user =  $this->callApi("auth/me","POST",[],["Authorization: Bearer ".session()->get("abno360token")]);
 
+    public function getAccessToken(){
+        return  session()->get("access_token");;
+    }
+    public function setAccessToken($code){
+        $response = \Illuminate\Support\Facades\Http::asForm()->post($this->url.'/oauth/token', [
+            'grant_type' => 'authorization_code',
+            'client_id' =>   $this->getClient()['client_id'],
+            'client_secret' => $this->getClient()['client_secret'],
+            'redirect_uri' => $this->getClient()['redirect_uri'],
+            'code' => $code,
+        ]);
+        if($response->getStatusCode()==200){
 
-           return $user;
+            session()->put("access_token",$response->json());
         }
         else{
-            throw new \Exception("User not logged in Abno360");
+            throw new \Exception("Invalid code");
         }
+        return  $this;
     }
 
+    public function me(){
+
+        $token = $this->getAccessToken();
+        $user =  $this->callApi("user","GET",[],["Authorization: Bearer ".$token["access_token"]]);
+        return $user;
+
+    }
+    public function getClient(){
+         $domain =  request()->getHttpHost();
+
+         session()->put('state', $state = \Str::random(40));
+         $abnoConfig = config("abno360");
+         return $abnoConfig['domains'][$domain];
+    }
     public function loginURL($guard='',$redirect=""){
          if($guard==""){
              $guard =  config("auth.defaults.guard");
          }
-         $clientId = config("abno360.client_id");
 
-         return $this->url."/auth/login?rediect_uri=".urlencode(route("abno360-handle-redirect",["ins_uri"=>$redirect,"auth"=>$guard]))."&client_id=$clientId";
+         $clientId =$this->getClient()['client_id'];
+         $query = http_build_query([
+
+            'redirect_uri' => $this->getClient()['redirect_uri'],//urlencode(route("abno360-handle-redirect",["ins_uri"=>$redirect,"auth"=>$guard])),
+            'client_id' =>$clientId,
+            'response_type' => 'code',
+            'scope' => '',
+            'state' => "test",
+            // 'prompt' => '', // "none", "consent", or "login"
+        ]);
+
+         return $this->url."/oauth/authorize?".$query;
     }
 
-    public function handleLogin($token){
-        session()->put("abno360token",$token);
-        $user =  $this->me();
-        // $internalUser = $this->loginInternalUser($user,request("auth",''));
-        $SelectOrganizationContract = new SelectOrganizationContract($user);
+    public function selectOrganization(){
+        $user =  $this->getUser();
+
+        $SelectOrganizationContract = new SelectOrganizationContract($user->user);
 
         if($SelectOrganizationContract->isUserConnectedWithAnyAuth()){
+
             if($SelectOrganizationContract->connectedAuthCount()==1){
                 $firstContract =  $SelectOrganizationContract->getFirstContract();
                 if($firstContract->auth()){
@@ -172,8 +251,29 @@ class Abno360Service{
         // if($urlToRedirect!=''){
         //     return redirect()->to($urlToRedirect);
         // }
+    }
 
+    public function storeDatabase($database){
+        $client = $this->getClient()["client_id"];
+        Cache::put("$client-database",$database);
+        return $this;
+    }
+    public function storeUser($user){
+        $client = $this->getClient()["client_id"];
+        Cache::put("$client-user",$user);
+        return $this;
+    }
+    public function getDatabase(){
+        $client = $this->getClient()["client_id"];
+        return  Cache::get("$client-database");
+    }
+    public function handleLogin($token){
 
+        $this->setAccessToken($token);
+        $user =  $this->me($token);
+        $this->storeDatabase($user->db);
+        $this->storeUser($user->user);
+        return true;
     }
 
     public function callApi($endpoint,$method="POST",$data=[],$headers=[]){
@@ -218,9 +318,12 @@ class Abno360Service{
          }
 
     }
-
+    public function getUser(){
+        $client = $this->getClient()["client_id"];
+        return  Cache::get("$client-user");
+    }
     public function handleAuthContract($cls,$userID){
-        $user =  $this->me();
+        $user =  $this->getUser();
         $clsObject = new $cls($user,$userID);
         if($clsObject->auth()){
             return response()->json(["status"=>"true","message"=>"success","redirect_url"=>$clsObject->redirectUrl()]);
